@@ -1,0 +1,76 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+
+  profile       Profile?
+  jobs          Job[]          @relation("RecruiterJobs")
+  applications  Application[] @relation("CandidateApplications")
+}
+
+model Profile {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  skills    String
+  resumeUrl String
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Job {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String
+  requiredSkills String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  recruiterId  Int
+  recruiter    User          @relation("RecruiterJobs", fields: [recruiterId], references: [id])
+  applications Application[]
+}
+
+model Application {
+  id          Int      @id @default(autoincrement())
+  status      ApplicationStatus @default(applied)
+  appliedAt  DateTime @default(now())
+
+  jobId       Int
+  candidateId Int
+
+  job       Job  @relation(fields: [jobId], references: [id])
+  candidate User @relation("CandidateApplications", fields: [candidateId], references: [id])
+
+  @@unique([jobId, candidateId])
+}
+
+enum Role {
+  candidate
+  recruiter
+  admin
+}
+
+enum ApplicationStatus {
+  applied
+  shortlisted
+  rejected
+}
